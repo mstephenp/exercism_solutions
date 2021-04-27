@@ -13,17 +13,32 @@ defmodule IsbnVerifier do
   """
   @spec isbn?(String.t()) :: boolean
   def isbn?(isbn) do
-    isbn
-    |> String.split("", trim: true)
-    |> Enum.filter(fn c -> c != "-" end)
-    |> Enum.map(fn c -> if c == "X", do: "10", else: c end)
-    |> Enum.map(fn c -> Integer.parse(c) end)
-    |> Enum.filter(fn n -> n != :error end)
-    |> Enum.map(fn {n, _} -> n end)
+    String.split(isbn, "", trim: true)
+    |> Enum.filter(&(&1 != "-"))
+    |> Enum.map(&change_x/1)
+    |> Enum.map(&Integer.parse/1)
     |> verify()
   end
 
-  def verify([x1, x2, x3, x4, x5, x6, x7, x8, x9, x10]) do
+  def change_x(value) when value == "X" do
+    "10"
+  end
+
+  def change_x(value) do
+    value
+  end
+
+  def verify(isbn_numbers) when length(isbn_numbers) != 10 do
+    false
+  end
+
+  def verify(isbn_numbers) do
+    Enum.filter(isbn_numbers, &(&1 != :error))
+    |> Enum.map(fn {n, _} -> n end)
+    |> is_valid?()
+  end
+
+  def is_valid?([x1, x2, x3, x4, x5, x6, x7, x8, x9, x10]) do
     (x1 * 10 +
        x2 * 9 +
        x3 * 8 +
@@ -37,7 +52,7 @@ defmodule IsbnVerifier do
     |> rem(11) == 0
   end
 
-  def verify(_anything_else) do
+  def is_valid?(_anything_else) do
     false
   end
 end
